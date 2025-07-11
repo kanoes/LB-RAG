@@ -7,6 +7,8 @@ import os
 from typing import Optional
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from pathlib import Path
+from typing import ClassVar
 
 # 環境変数を読み込み
 load_dotenv()
@@ -25,7 +27,10 @@ class Config(BaseModel):
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     
     # ベクトルストア設定
-    vector_store_persist_directory: str = "./data/vector_store"
+    BASE_DIR: ClassVar[Path] = Path(__file__).resolve().parents[1]
+    vector_store_persist_directory: ClassVar[Path] = (
+        BASE_DIR / "data" / "vector_store"
+    )
     chunk_size: int = 1000
     chunk_overlap: int = 200
     
