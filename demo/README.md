@@ -34,14 +34,7 @@ demo/
 
 ## セットアップ
 
-### 1. 依存関係のインストール
-
-```bash
-cd demo/backend
-pip install -r requirements.txt
-```
-
-### 2. 環境変数の設定
+### 1. 環境変数の設定
 
 `.env`ファイルを作成し、OpenAI APIキーを設定してください：
 
@@ -49,11 +42,10 @@ pip install -r requirements.txt
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-### 3. アプリケーションの実行
+### 2. アプリケーションの実行
 
 ```bash
-cd demo/frontend
-streamlit run app.py
+bash demo/run.sh
 ```
 
 ## 使用方法
