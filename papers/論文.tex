@@ -1,206 +1,157 @@
-\documentclass[12pt, a4paper]{jsarticle}
+\documentclass[12pt]{bxjsreport}
 
+% -------- 日本語環境・レイアウト --------
 \usepackage{geometry}
-\geometry{
-  top=30mm,
-  bottom=30mm,
-  left=25mm,
-  right=25mm
-}
-
-\usepackage{fontspec}
-\usepackage{zxjatype}
+\geometry{margin=25mm}
+\usepackage[ipa]{zxjatype}
+\usepackage[deluxe,uplatex]{otf}
+\setjamainfont{IPAexMincho} 
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{url}
-\usepackage{setspace}
-\usepackage{titlesec}
-\usepackage{tocloft}
-\usepackage{ragged2e}
-\usepackage[hidelinks]{hyperref}
+\usepackage{hyperref}
 
-\onehalfspacing
-\setlength{\parskip}{0.8em}
-
-% Set URL line breaks
-\def\UrlBreaks{\do\/\do-\do:\do=\do.\do?\do&\do_}
-\Urlmuskip=0mu plus 1mu
-
-% Set bibliography style
-\renewcommand{\bibname}{参考文献}
-
-\setmainfont[
-  BoldFont=Hiragino Mincho ProN W6,
-  ItalicFont=Hiragino Mincho ProN W3
-]{Hiragino Mincho ProN W3}
-\setjamainfont[
-  BoldFont=Hiragino Mincho ProN W6,
-  ItalicFont=Hiragino Mincho ProN W3
-]{Hiragino Mincho ProN W3}
-\setulmainfont[
-  BoldFont=Hiragino Mincho ProN W6,
-  ItalicFont=Hiragino Mincho ProN W3
-]{Hiragino Mincho ProN W3}
-\setmonofont{Osaka}
-\setsansfont{Hiragino Kaku Gothic ProN W3}
-
-
-\titleformat{\chapter}[hang]
-  {\normalfont\Large\bfseries}{\thechapter.}{1em}{}
-\titlespacing*{\chapter}{0pt}{20pt}{20pt}
-
-\titleformat{\section}
-  {\normalfont\large\bfseries}{\thesection}{1em}{}
-\titlespacing*{\section}{0pt}{20pt}{10pt}
-
-\titleformat{\subsection}
-  {\normalfont\normalsize\bfseries}{\thesubsection}{1em}{}
-\titlespacing*{\subsection}{0pt}{15pt}{8pt}
-
-\renewcommand{\cfttoctitlefont}{\Large\bfseries\hfill}
-\renewcommand{\cftaftertoctitle}{\hfill}
-\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
-\renewcommand{\contentsname}{目次}
-
-\title{\Huge 多言語対応RAGにおけるクロスリンガル性能の\\向上に関する研究}
-\author{〇〇大学 〇〇学部 〇〇学科\\[10pt]
-学籍番号: XXXXXXXX\\[5pt]
-氏名: 〇〇　〇〇}
-\date{\today}
+% -------- タイトル情報 --------
+\title{LBRAG: 検索改良およびプロンプト制御に基づく多言語RAGシステムの構築}
+\author{〇〇大学 〇〇学部 〇〇学科\\学生番号: XXXXXXXX\\氏名: 〇〇　〇〇}
+\date{2025年5月18日}
 
 \begin{document}
 
+% -------- 表紙 --------
 \maketitle
-\thispagestyle{empty}
-\newpage
 
-\pagenumbering{roman}
+% -------- 目次 --------
 \tableofcontents
 \newpage
 
-\pagenumbering{arabic}
+% -------- 緒論 --------
 \chapter{緒論}
-\label{chap:introduction}
 
 \section{研究の背景}
-\label{sec:background}
-% ここに研究背景を記述
+
+大規模言語モデル (LLM) は膨大な知識をそのパラメータ内部に蓄えており、多くのNLPタスクで高い性能を示す一方で、世界知識の更新や根拠の明示といった点に課題を抱えています。この問題に対処するため、外部の非パラメトリックな知識源を組み合わせる**検索強化型生成** (Retrieval-Augmented Generation, **RAG**) が提案されました。RAGでは、あらかじめ用意した知識ベースから関連文書を検索し、その内容を条件にテキストを生成することで、言語モデルの事前知識を最新の情報や専門知識で補完します。これによりモデルの発話の事実整合性や透明性が向上し、オープンドメイン質問応答や知識対話などの知識集約型タスクで性能向上が報告されています。
+
+しかし、既存研究の多くは英語単言語環境でRAG技術を開発・評価しており、他言語への適用は十分に検討されていません。実際の応用シナリオではユーザが様々な言語で質問し得るにも関わらず、知識ベースの主要言語とのミスマッチによって検索や応答生成に支障をきたす場合があります。たとえば、Akari Asaiらは質問言語と回答に用いる記事言語が異なる大規模データセットXOR-QAを構築し、多言語環境におけるオープンQAの課題を明らかにしました。XOR-QAでは7つの言語で約4万の質問を収集し、高性能な機械翻訳や多言語モデルを用いたベースラインでも正答率が低く、多言語QAは依然困難であることが示されています。このように、**多言語RAG**システムの構築は、情報資源が言語間で不均衡である現実世界に対応するための重要な課題となっています。
+
+さらに、多言語対応のLLM自体にも言語バイアスの問題が指摘されています。Sharmaらは多言語LLMが情報検索の過程で入力言語と同じ言語の情報を過度に優先し、場合によっては高資源言語（例えば英語）の情報ばかりを引用して応答を生成する傾向を報告しました。この偏りにより、低資源言語話者は必要な知識にアクセスしづらくなり、モデルが主要言語の視点を増幅してしまう恐れがあります。以上の背景から、本研究では多言語環境におけるRAGの問題点を精査し、その解決策を検討します。
 
 \section{研究目的}
-\label{sec:purpose}
-% ここに研究目的を記述
+
+本研究の目的は、ユーザの質問と言語に関わらず高品質な知識検索と回答生成を行える**多言語RAGシステム**を構築することです。具体的には、検索モジュールの改良とプロンプト制御手法の工夫により、多言語環境に内在する以下の課題に対処することを目指します。(1) **検索の言語ミスマッチ問題**: ユーザ質問と言語の異なる知識源から有用情報を見落とさず取得する。で指摘されるように、英語のみの知識ベースでは各言語固有の知識を網羅できず、また多言語検索では取得結果のばらつきによる不整合が生じ得ます。本研究では検索クエリと取得文書の言語橋渡し（Language Bridging）戦略を導入し、この問題を緩和します。(2) **生成応答の言語一貫性問題**: モデルが取得文書を活用してユーザと同じ言語で流暢かつ正確に回答できるよう制御する。Chirkovaらの基盤研究では、単に多言語モデルを組み合わせただけでは回答内に不要なコードスイッチ（言語の混在）が頻発し、流暢さも損なわれると報告されています。本研究ではプロンプト設計や生成ルールを工夫し、モデルが出力言語と内容を適切に制御できるようにします。
+
+以上の改良を組み合わせた本研究のアプローチを、ここでは仮に**LBRAG**(**Language-Bridged Retrieval-Augmented Generation**)と呼称します。LBRAGは検索と言語の橋渡しと、生成時の言語制御という二段階の工夫によって、多言語RAGにおける知識取得漏れや言語不一致の課題を解決することを狙いとしています。
 
 \section{本論文の貢献}
-\label{sec:contribution}
-% ここに本論文の貢献を記述
+
+本研究の主な貢献を以下にまとめます。
+
+\begin{itemize}
+\item **多言語RAGの問題点整理**: 先行研究の調査により、既存の多言語RAGシステムが直面する課題を明確化しました。特に、検索段階での主要言語偏重や生成段階での出力言語不整合など、本分野における問題点を整理し、本研究が取り組むべき具体的課題を定めました。
+\item **LBRAG手法の提案**: 上述の課題を解決するため、検索改良とプロンプト制御を組み合わせた新たな多言語RAG手法LBRAGを提案します。LBRAGでは、多言語検索において英語等のブリッジ言語を活用して知識網羅性を高める戦略と、生成モデルに対する出力言語指示・根拠利用指示によるプロンプトデザインを導入しました。これにより、クロスリンガルな知識活用能力を強化しつつユーザ言語での一貫した応答生成を可能にします。
+\item **ベースラインとの比較評価**: 提案手法を既存のベースライン手法（例: 質問翻訳型や文書翻訳型の多言語QA手法）と比較する実験を行い、その有効性を検証しました。具体的には、多言語オープンドメインQAデータセットを用いて、回答の正確性と言語適合性、ならびに検索網羅性の指標で評価し、LBRAGが従来手法を上回る性能を示すことを確認しました。
+\item **知見の共有**: 実験結果の分析を通じて、多言語RAGシステム設計上の指針を議論します。例えば、どの程度ブリッジ言語（英語）の知識を活用すべきかや、プロンプトによる言語制御の効果と限界などについて考察し、今後の研究や実システム開発に資する知見を提示します。
+\end{itemize}
 
 \section{本論文の構成}
-\label{sec:structure}
-% ここに論文構成を記述
 
+本論文は以下のように構成されています。まず、第\ref{chap\:related\_work}章では本研究に関連する文献を概観し、従来手法と本研究の位置づけについて述べます。第3章では提案手法LBRAGの詳細な設計と原理について説明します。第4章では実験手法と評価結果を示し、提案手法の有効性を検証するとともに考察を行います。最後に第5章で本研究の結論と今後の課題をまとめます。
+
+% -------- 関連研究 --------
 \chapter{関連研究}
-\label{chap:related_work}
 
-\section{Retrieval-Augmented Generation (RAG)}
-\label{sec:rag_overview}
-% RAGの基本について
+\section{Retrieval-Augmented Generation (RAG) の基礎}
+**検索強化型生成 (RAG)** は、事前学習済み言語モデル（生成モデル）のパラメトリック知識と、非パラメトリックな外部知識ソースからの検索結果を統合する枠組みです。Lewisらが提案した元祖RAGモデルでは、百科事典Wikipediaの全記事をベクトル索引化した知識ソースに対し、質問から類似度の高い文書をDense Passage Retriever (DPR)で検索し、それら文書をコンテキストとしてシーケンス生成型の言語モデルに回答を生成させました。RAGはオープンドメイン質問応答や対話システムに適用され、純粋な生成モデルより事実的で多様な応答を生成できることが示されています。以降の研究では、RetrieverとGeneratorの組合せ最適化や、高速な再検索戦略、長文コンテキスト対応など様々な拡張が行われています。RAG自体の総合的なサーベイについてはGuptaらに詳しくまとめられており、我々の研究もこの文脈の上に位置づけられます。
 
-\section{多言語・クロスリンガル情報検索}
-\label{sec:multilingual_ir}
-% 多言語検索、クロスリンガル検索について
+\section{クロスリンガル質問応答への展開}
 
-\section{多言語RAGにおける既存アプローチ}
-\label{sec:existing_multilingual_rag}
-% Translate-Query, MultiRAG, CrossRAGなどの既存手法について
+ユーザの質問と言語の異なる知識を用いて回答する**クロスリンガル質問応答**は、多言語RAGの一形態として注目されています。典型的な例として、AsaiらのXOR-QAデータセットでは、日本語など非英語の質問に対し英語のWikipediaから答えを検索し、最終回答を質問者の言語で返すという設定が導入されました。このタスクでは質問言語で十分な情報が得られない場合に英語情報への橋渡しが必要となり、従来の単言語QAシステムでは対応できません。AsaiらはXOR-QAに対し機械翻訳を用いた質問変換＋英語検索、あるいは多言語事前学習モデルを用いた検索などのベースラインを構築しましたが、いずれも正解率は5割以下に留まり、クロスリンガルQAの困難さが示されています。続く研究では、この課題を克服するため多様なアプローチが検討されています。
 
-\subsection{Translate-Query RAG}
-\label{subsec:translate_query}
+一つの方向性は**クロスリンガルDPR**による統一的なQAモデルの構築です。Asaiら（2021）はNeurIPSにて**CORA**と呼ばれる多言語オープンQAモデルを発表し、質問と異なる言語の文書をDense Passage Retrievalで直接検索できるエンコーダを訓練することで、26言語にわたるQA性能の大幅な向上を達成しました。CORAは質問文と言語にかかわらず英語・多言語併用のコーパスから有効なパッセージを見つけ出し、さらにそれらを条件に生成モデルが直接対象言語で回答を出力する end-to-end モデルです。高リソース言語のみならず、学習時に訓練データの無かった9言語でも大きな性能向上が報告されており、クロスリンガルな検索と生成を統合的に行う手法の有効性が示されました。
 
-\subsection{Multilingual RAG}
-\label{subsec:multilingual_rag}
+この他にも、クロスリンガルQA分野では質問の翻訳や回答候補の翻訳を組み合わせて逐次的に解を求める手法や、多言語での知識蒸留を用いて低リソース言語の精度を高める工夫などが提案されています。我々の研究は、これらクロスリンガルQAの知見を多言語LLMを用いたRAGシステムに応用し、ユーザ言語と知識言語のギャップを埋めることを目指すものです。
 
-\subsection{CrossRAG}
-\label{subsec:cross_rag}
+\section{多言語RAGの最近の発展}
+
+近年、LLMを中核とした**多言語RAG**（mRAG）の実験的検証が進み、いくつかの強力なベースライン手法や分析結果が報告されています。Chirkovaらは13言語対応のRAGパイプラインを構築し、多言語版RAG (mRAG) の**強力なベースライン**を提示しました。彼らの発見によれば、高性能な多言語検索器（例えば多言語DPR）と多言語生成モデルを組み合わせたとしても、ユーザの質問言語で回答を生成させるためにはタスク固有のプロンプト工夫が不可欠であることが示されています。たとえば、明示的に「日本語で答えてください」と指示しないと英語で回答してしまうケースが多々あり、プロンプトに出力言語を指定するだけで性能が大きく向上したと報告しています。また評価指標についても、多言語では固有名詞の表記ゆれ等を考慮したメトリクス調整が必要であること、さらに非ラテン文字言語（日本語やアラビア語など）では生成中に英単語が紛れ込む**コードスイッチング**現象が頻発することなど、今後取り組むべき課題が明らかにされています。
+
+こうした課題を踏まえ、RAGを多言語で高度化する研究も登場しています。Ranaldiらは**質問翻訳型RAG (tRAG)** や**多言語同時検索型RAG (MultiRAG)** といった手法を比較検証し、それぞれ一長一短があることを示しました。tRAGは質問を英訳してから英語の知識源に問い合わせるため実装が容易ですが、英語版Wikipedia等に存在しないローカル知識の検索漏れが発生します。一方MultiRAGは各言語で直接検索することで知識網羅性を高めますが、言語間で取得内容に不整合が生じ、生成時に矛盾をきたすことがあります。そこで彼らは、検索結果として得られた多言語文書を一旦共通言語（英語）に機械翻訳してから生成モデルに入力する**CrossRAG**手法を提案し、知識集約型QAタスクにおいて従来手法を大きく上回る正確性を達成しました。CrossRAGにより、高資源・低資源いずれの言語においてもQA性能が有意に向上したことが報告されており、検索結果の言語統一が効果的なアプローチであると示唆されます。
+
+また、多言語RAGにおける**言語バイアス**への対処も重要な研究テーマです。Parkらは、検索器が高資源言語やユーザ質問言語の文書を過剰に優先する一方で、それが必ずしも生成精度の向上に結びつかないこと、また生成器が内部知識に頼り質問言語やラテン文字スクリプトでの回答を好む傾向を指摘しました。この問題に対し彼らは、取得した原言語文書とその翻訳文を**デュアル**で入力することでモデル内部の多言語知識を補完し合う**DKM-RAG**（Dual Knowledge Multilingual RAG）を提案しています。DKM-RAGはシンプルな枠組みながら、言語の偏りを緩和しつつ全体の回答性能を高めることに成功したと報告されています。さらにSharmaらの研究（通称 *Faux Polyglot*）では、オープンソース多言語LLMを複数評価し、モデルが自言語で回答可能な場合には他言語情報を無視しがちである一方、回答に必要な自言語情報が無い場合には安易に英語情報に頼ってしまう傾向を定量的に示しました。これは多言語モデルが一見多言語知識を持っているようでいて、実際には言語間で不均衡な知識ソースを参照している可能性を示唆します。この他、WuらやQiらは多言語RAGシステムで英語が優遇される現象や、異言語コンテキストを与えた際の利用一貫性について分析を行っており、我々の研究においてもこれら知見を踏まえて手法設計・評価を行います。
 
 \section{本研究の位置づけ}
-\label{sec:positioning}
-% 関連研究を踏まえた本研究の位置づけ
 
+以上述べたように、多言語RAGに関する先行研究では、基盤技術の確立から課題の指摘、そしてそれらを克服するためのアプローチ提案まで、精力的な展開が見られます。本研究は、この文脈において**検索改善**と**プロンプト制御**という観点から多言語RAG性能の向上に取り組む点で差別化されます。
+
+まず検索面では、CrossRAGやDKM-RAGが文書翻訳を用いた手法で成功を収めていますが、それぞれ英語翻訳に依存することによる情報損失や、モデル入力長の増大によるコスト増といったトレードオフも考えられます。これに対し本研究のLBRAG手法では、英語など高資源言語の知識を積極的に活用しつつも必ずしも全文書を翻訳するのではなく、検索クエリの拡張や再検索によって**必要な追加情報のみ取得**するアプローチを検討します。例えば、ユーザ質問をそのまま各言語の検索インデックスに投げるだけでなく、一旦英語に翻訳したクエリでも検索し、その結果からユーザ言語で有用そうな情報源を逆引きするようなステップを組み込みます。これにより、英語知識をブリッジとして他言語知識を見つけ出す「橋渡し検索」を実現し、単純な英語偏重とも異なるバランスの取れた検索結果を生成します。先行研究が指摘した検索段階での高リソース言語偏りを抑えつつ、情報網羅性を担保する点が本手法の特徴です。
+
+次に生成面では、Chirkovaらが強調したプロンプト設計の重要性に着目し、モデルに対する指示の出し方を体系的に検討します。具体的には、ユーザ言語で回答させるための指示文の形式や位置、また引用すべき根拠文書を明示するプロンプトの付与など、モデル出力を**制御可能なプロンプト**を設計します。これにより、コードスイッチングの減少や回答言語の一貫性向上が期待できます。既存の多言語RAG研究では生成モデル自体の改良（例えば多言語モデルへの追加事前学習）に注力するものが多く、プロンプト制御戦略を包括的に評価した例は少ないです。本研究はこの点でユニークであり、与えられたLLMを最大限多言語環境に適合させる実用的なアプローチとして貢献するものです。
+
+以上より、LBRAGは先行研究の知見を融合しつつ新たな角度から多言語RAGの性能向上を図る試みと位置づけられます。本手法がもたらす効果を定量・定性的に評価することで、検索と生成の両面から多言語知識活用を促進するアプローチの有用性を示すことが本研究の狙いです。今後章立てに沿って提案手法の詳細と評価結果を述べていきます。
+
+% -------- 提案手法 --------
 \chapter{提案手法}
-\label{chap:proposed_method}
 
 \section{システムアーキテクチャ概要}
-\label{sec:architecture_overview}
-% アーキテクチャ図をここに挿入
+（ここに本文を記述）
 
 \section{デュアル検索モジュール}
-\label{sec:dual_retrieval}
+（ここに本文を記述）
 
 \section{証拠統一モジュール}
-\label{sec:evidence_unification}
-% 検索結果の翻訳と比較戦略について
+（ここに本文を記述）
 
 \section{言語制御付き回答生成モジュール}
-\label{sec:controlled_generation}
-% プロンプトエンジニアリングによるコードスイッチング抑制について
+（ここに本文を記述）
 
+% -------- 実証分析 --------
 \chapter{実証分析}
-\label{chap:experiments}
 
 \section{実験設定}
-\label{sec:experimental_setup}
 
 \subsection{データセット}
-\label{subsec:datasets}
-% MKQA, XOR-TyDi QAなど
+（ここに本文を記述）
 
 \subsection{比較手法}
-\label{subsec:baselines}
-% ベースライン手法について
+（ここに本文を記述）
 
 \subsection{評価指標}
-\label{subsec:evaluation_metrics}
-% EM, F1, コードスイッチング率など
+（ここに本文を記述）
 
 \section{実験結果}
-\label{sec:results}
-% 結果をまとめた表などをここに挿入
+（ここに本文を記述）
 
 \section{事例分析}
-\label{sec:case_study}
-% 成功例・失敗例の分析
+（ここに本文を記述）
 
+% -------- 考察 --------
 \chapter{考察}
-\label{chap:discussion}
 
 \section{実験結果の解釈}
-\label{sec:interpretation}
-% なぜ提案手法が優れていたか
+（ここに本文を記述）
 
 \section{本研究の限界と今後の課題}
-\label{sec:limitations_future_work}
+（ここに本文を記述）
 
+% -------- 結論 --------
 \chapter{結論}
-\label{chap:conclusion}
 
 \section{本研究のまとめ}
-\label{sec:summary}
+（ここに本文を記述）
 
 \section{今後の展望}
-\label{sec:prospects}
+（ここに本文を記述）
 
+% -------- 謝辞 --------
+\chapter*{謝辞}
+\addcontentsline{toc}{chapter}{謝辞}
+本研究に際し、ご指導いただいた指導教員の〇〇先生、共同研究者の皆様に深く感謝いたします。
 
-\appendix
-\chapter{謝辞}
-\label{chap:acknowledgements}
-
+% -------- 参考文献 --------
 \begin{thebibliography}{99}
-  \raggedright
-  % ここに参考文献を記述
-  \bibitem{lewis2020rag}
-  Lewis, P., et al. (2020). Retrieval-augmented generation for knowledge-intensive nlp tasks. \textit{Advances in Neural Information Processing Systems}, 33, 9459-9474.
-
+\bibitem{lewis2020rag}
+Lewis, P., et al. (2020). Retrieval-augmented generation for knowledge-intensive NLP tasks. \textit{Advances in Neural Information Processing Systems}, 33, 9459-9474.
 \end{thebibliography}
 
 \end{document}
